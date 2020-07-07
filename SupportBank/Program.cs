@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
+using Newtonsoft.Json;
 using NLog;
 using NLog.Config;
 using NLog.Targets;
@@ -32,18 +33,10 @@ namespace SupportBank {
                .ForEach(t => Console.WriteLine(t));
         }
         
-        public static void Main(string[] args)
-        {
-
-            var config = new LoggingConfiguration();
-            var target = new FileTarget { FileName = @"C:\Work\Logs\SupportBank.log", Layout = @"${longdate} ${level} - ${logger}: ${message}" };
-            config.AddTarget("File Logger", target);
-            config.LoggingRules.Add(new LoggingRule("*", LogLevel.Debug, target));
-            LogManager.Configuration = config;
-            
+        public static List<Transaction> readCsv(string filename) {
             var TransactionList = new List<Transaction>();
             
-            using(var reader = new StreamReader("DodgyTransactions2015.csv")) {
+            using(var reader = new StreamReader(filename)) {
                 reader.ReadLine(); // header
                 var lineNum = 1;
                 while (!reader.EndOfStream)
@@ -57,13 +50,30 @@ namespace SupportBank {
                     }
                     try {
                         var date = DateTime.Parse(strings[0]);
-                        TransactionList.Add(new Transaction(strings[0], strings[1], strings[2],
-                            strings[3], decimal.Parse(strings[4])));
+                        TransactionList.Add(new Transaction(strings[0], strings[1], 
+                            strings[2], strings[3], decimal.Parse(strings[4])));
                     } catch {
                         Console.WriteLine($"Malformed transaction - line {lineNum}: {line}");
                     }
                 }
             }
+            return TransactionList;
+        }
+
+        public static List<Transaction> readJson(string filename) {
+            return JsonConvert.DeserializeObject<List<Transaction>>(
+                File.ReadAllText(filename));
+        }
+        
+        public static void Main(string[] args)
+        {
+            var config = new LoggingConfiguration();
+            var target = new FileTarget { FileName = @"C:\Work\Logs\SupportBank.log", Layout = @"${longdate} ${level} - ${logger}: ${message}" };
+            config.AddTarget("File Logger", target);
+            config.LoggingRules.Add(new LoggingRule("*", LogLevel.Debug, target));
+            LogManager.Configuration = config;
+            
+            var TransactionList = readJson("Transactions2013.json");
             
             while (true)
             {
@@ -89,22 +99,4 @@ namespace SupportBank {
             }
         }
     }
-
-    internal class Transaction
-    {
-        internal string Date { get; } 
-        internal string From { get; }  
-        internal string To { get; }  
-        internal string Narrative { get; } 
-        internal decimal Amount { get; } 
-
-        public Transaction (string Date, string From, string To, string Narrative, decimal Amount)
-        {
-            this.Date = Date; this.From = From ; this.To = To ; this.Narrative = Narrative; this.Amount = Amount;
-        }
-
-        public override string ToString() {
-            return $"From: {From}, To: {To}, Amt: {Amount}, Date: {Date}, For: {Narrative}";
-        } // own file?
-    } 
 }
