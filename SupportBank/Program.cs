@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Xml;
 using Newtonsoft.Json;
 using NLog;
 using NLog.Config;
@@ -65,7 +66,25 @@ namespace SupportBank {
             transactions = JsonConvert.DeserializeObject<List<Transaction>>(
                 File.ReadAllText(filename));
         }
-        
+
+        public static void readXML(string filename)
+        {
+            transactions = new List<Transaction>();
+            
+            var xmldoc = new XmlDocument();
+            xmldoc.LoadXml(File.ReadAllText(filename));
+            XmlNodeList nodes = xmldoc.DocumentElement.SelectNodes("/TransactionList/SupportTransaction");
+            foreach (XmlNode node in nodes)
+            {
+                var Narrative = node.SelectSingleNode("Description").InnerText;
+                var Amount = decimal.Parse(node.SelectSingleNode("Value").InnerText);
+                var From = node.SelectSingleNode("Parties/From").InnerText;
+                var To = node.SelectSingleNode("Parties/To").InnerText;
+                var Date = node.Attributes[0].Value;
+                var t = new Transaction(Date, From, To, Narrative, Amount);
+                transactions.Add(t);
+            }
+        }
         
         public static void Main()
         {
@@ -91,9 +110,13 @@ namespace SupportBank {
                     {
                         readJson(input);
                     }
-                    else
+                    else if (input.EndsWith(".csv"))
                     {
                         readCsv(input);
+                    }
+                    else
+                    {
+                        readXML(input);
                     }
                 }
                 else if (input.ToLower().Equals("list all"))
