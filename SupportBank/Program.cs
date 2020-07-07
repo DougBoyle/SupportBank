@@ -36,7 +36,7 @@ namespace SupportBank {
         }
         
         public static void readCsv(string filename) {
-            var transactions = new List<Transaction>();
+            transactions = new List<Transaction>();
             
             using(var reader = new StreamReader(filename)) {
                 reader.ReadLine(); // header
@@ -76,27 +76,36 @@ namespace SupportBank {
             LogManager.Configuration = config;
             
             
-            readJson("Transactions2013.json");
+            var r = new Regex("List ([a-z]+( [a-z])?)", RegexOptions.IgnoreCase);
             
             while (true)
             {
-                Console.WriteLine(@"""List All"" or ""List (Account)""");
+                Console.WriteLine(@"""List All"" or ""List (Account)"" or ""Import File (FileName)""");
                 var input = Console.ReadLine();
-
-                if (input.Equals("List All"))
+                var m = r.Match(input);
+                
+                if (input.ToLower().StartsWith("import file "))
+                {
+                    input = input.Substring(12);
+                    if (input.EndsWith(".json"))
+                    {
+                        readJson(input);
+                    }
+                    else
+                    {
+                        readCsv(input);
+                    }
+                }
+                else if (input.ToLower().Equals("list all"))
                 {
                     ListAll();
-                    break;
+                }
+                else if (m.Success)
+                {
+                    ListAccount(m.Groups[1].ToString());
                 }
                 else
-                {
-                    var r = new Regex("List ([a-z]+( [a-z])?)", RegexOptions.IgnoreCase);
-                    var m = r.Match(input);
-                    if (m.Success)
-                    {
-                        ListAccount(m.Groups[1].ToString());
-                        break;
-                    }
+                { 
                     Console.WriteLine("Incorrect Format");
                 }
             }
