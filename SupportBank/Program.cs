@@ -10,8 +10,10 @@ using NLog.Targets;
 namespace SupportBank {
     internal class Program {
         private static readonly ILogger logger = LogManager.GetCurrentClassLogger();
+
+        private static List<Transaction> transactions = new List<Transaction>();
         
-        public static void ListAll(List<Transaction> transactions) {
+        public static void ListAll() {
             var accounts = new Dictionary<string, decimal>(); // make an object, use decimal as appose to float?
             foreach (var t in transactions) {
                 if (!accounts.ContainsKey(t.From)) {
@@ -28,13 +30,13 @@ namespace SupportBank {
             }
         }
 
-        public static void ListAccount(List<Transaction> transactions, string name) {
+        public static void ListAccount(string name) {
             transactions.FindAll(t => t.From == name || t.To == name)  
                .ForEach(t => Console.WriteLine(t));
         }
         
-        public static List<Transaction> readCsv(string filename) {
-            var TransactionList = new List<Transaction>();
+        public static void readCsv(string filename) {
+            var transactions = new List<Transaction>();
             
             using(var reader = new StreamReader(filename)) {
                 reader.ReadLine(); // header
@@ -50,22 +52,22 @@ namespace SupportBank {
                     }
                     try {
                         var date = DateTime.Parse(strings[0]);
-                        TransactionList.Add(new Transaction(strings[0], strings[1], 
+                        transactions.Add(new Transaction(strings[0], strings[1], 
                             strings[2], strings[3], decimal.Parse(strings[4])));
                     } catch {
                         Console.WriteLine($"Malformed transaction - line {lineNum}: {line}");
                     }
                 }
             }
-            return TransactionList;
         }
 
-        public static List<Transaction> readJson(string filename) {
-            return JsonConvert.DeserializeObject<List<Transaction>>(
+        public static void readJson(string filename) {
+            transactions = JsonConvert.DeserializeObject<List<Transaction>>(
                 File.ReadAllText(filename));
         }
         
-        public static void Main(string[] args)
+        
+        public static void Main()
         {
             var config = new LoggingConfiguration();
             var target = new FileTarget { FileName = @"C:\Work\Logs\SupportBank.log", Layout = @"${longdate} ${level} - ${logger}: ${message}" };
@@ -73,7 +75,8 @@ namespace SupportBank {
             config.LoggingRules.Add(new LoggingRule("*", LogLevel.Debug, target));
             LogManager.Configuration = config;
             
-            var TransactionList = readJson("Transactions2013.json");
+            
+            readJson("Transactions2013.json");
             
             while (true)
             {
@@ -82,7 +85,7 @@ namespace SupportBank {
 
                 if (input.Equals("List All"))
                 {
-                    ListAll(TransactionList);
+                    ListAll();
                     break;
                 }
                 else
@@ -91,7 +94,7 @@ namespace SupportBank {
                     var m = r.Match(input);
                     if (m.Success)
                     {
-                        ListAccount(TransactionList, m.Groups[1].ToString());
+                        ListAccount(m.Groups[1].ToString());
                         break;
                     }
                     Console.WriteLine("Incorrect Format");
