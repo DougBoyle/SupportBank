@@ -2,11 +2,11 @@
 
 namespace SupportBank {
     public class Transaction {
-        internal DateTime Date { get; } 
-        internal string From { get; }  
-        internal string To { get; }  
-        internal string Narrative { get; } 
-        internal decimal Amount { get; } 
+        public DateTime Date { get; set; } 
+        public string From { get; set; }  
+        public string To { get; set; }  
+        public string Narrative { get; set; } 
+        public decimal Amount { get; set; } 
 
         public Transaction (DateTime Date, string FromAccount, string ToAccount, string Narrative, decimal Amount)
         {

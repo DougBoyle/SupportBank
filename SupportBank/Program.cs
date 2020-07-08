@@ -27,24 +27,44 @@ namespace SupportBank {
             
             while (true)
             {
-                Console.WriteLine(@"""List All"" or ""List (Account)"" or ""Import File (FileName)""");
+                Console.WriteLine(@"""List All"" or ""List (Account)"" or ""Import File (FileName)"" or ""Export File (FileName)""");
                 var input = Console.ReadLine();
                 var m = r.Match(input);
                 
                 if (input.ToLower().StartsWith("import file "))
                 {
                     input = input.Substring(12);
-                    if (input.EndsWith(".json"))
-                    {
-                        readJson(input);
+                    try {
+                        if (input.EndsWith(".json")) {
+                            readJson(input);
+                        }
+                        else if (input.EndsWith(".csv")) {
+                            readCsv(input);
+                        }
+                        else {
+                            readXML(input);
+                        }
                     }
-                    else if (input.EndsWith(".csv"))
-                    {
-                        readCsv(input);
+                    catch {
+                        Console.WriteLine($"Could not read file: {input}");
                     }
-                    else
-                    {
-                        readXML(input);
+                }
+                else if (input.ToLower().StartsWith("export file "))
+                {
+                    input = input.Substring(12);
+                    try {
+                        if (input.EndsWith(".json")) {
+                            writeJson(input);
+                        }
+                        else if (input.EndsWith(".csv")) {
+                            //  readCsv(input);
+                        }
+                        else {
+                            //   readXML(input);
+                        }
+                    }
+                    catch {
+                        Console.WriteLine($"Could not write file: {input}");
                     }
                 }
                 else if (input.ToLower().Equals("list all"))
@@ -113,6 +133,14 @@ namespace SupportBank {
         public static void readJson(string filename) {
             transactions = JsonConvert.DeserializeObject<List<Transaction>>(
                 File.ReadAllText(filename));
+        }
+
+        public static void writeJson(string filename) {
+            var writer = new JsonTextWriter(new StreamWriter(filename));
+            var ser = new JsonSerializer();
+            writer.Formatting = Newtonsoft.Json.Formatting.Indented;
+            ser.Serialize(writer, transactions);            
+            writer.Close();
         }
 
         public static void readXML(string filename)
