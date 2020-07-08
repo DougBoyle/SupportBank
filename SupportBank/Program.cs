@@ -39,7 +39,7 @@ namespace SupportBank {
 
         public static void RunCommand()
         {
-            var r = new Regex("List ([a-z]+( [a-z])?)", RegexOptions.IgnoreCase);
+            var r = new Regex("List ([a-z]+( [a-z])?)(?<date> .*)?", RegexOptions.IgnoreCase);
             Console.WriteLine("\"List All\" or \"List (Account)\" or \"Import File (FileName)\" " +
                               "or \"Export File (FileName)\"");
             var input = Console.ReadLine();
@@ -81,23 +81,44 @@ namespace SupportBank {
                     Console.WriteLine($"Could not write file: {input}");
                 }
             }
-            else if (input.ToLower().Equals("list all"))
+            else if (input.ToLower().StartsWith("list all"))
             {
-                ListAll();
+                try {
+                    var d = DateTime.Parse(input.Substring(8));
+                    ListAll(d);
+                } catch {
+                    if (input.Length > 8) {
+                        Console.WriteLine("Date input not recognised");
+                    }
+                    ListAll(DateTime.Now);
+                }
             }
             else if (m.Success)
             {
-                ListAccount(m.Groups[1].ToString());
+                var name = m.Groups[1].ToString();
+                var date = m.Groups["date"].ToString();
+                if (date.Length == 0) {
+                    ListAccount(name, DateTime.Now);
+                }
+                else {
+                    try {
+                        ListAccount(name, DateTime.Parse(date));
+                    }
+                    catch {
+                        Console.WriteLine("Date input not recognised");
+                        ListAccount(name, DateTime.Now);
+                    }
+                }
             }
             else
             { 
                 Console.WriteLine("Incorrect Format");
             }
         }
-        
-        public static void ListAll() {
+
+        public static void ListAll(DateTime date) {
             var accounts = new Dictionary<string, decimal>(); 
-            foreach (var t in transactions) {
+            foreach (var t in transactions.Where(t => t.Date <= date)) {
                 if (!accounts.ContainsKey(t.From)) {
                     accounts.Add(t.From, decimal.Zero);
                 }
@@ -112,8 +133,8 @@ namespace SupportBank {
             }
         }
 
-        public static void ListAccount(string name) {
-            transactions.ToList().FindAll(t => t.From == name || t.To == name)  
+        public static void ListAccount(string name, DateTime date) {
+            transactions.ToList().FindAll(t => (t.From == name || t.To == name) && t.Date <= date)  
                .ForEach(t => Console.WriteLine(t));
         }
     }
