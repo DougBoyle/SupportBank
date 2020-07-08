@@ -6,7 +6,7 @@ namespace SupportBank
 {
     public class CsvReadWriter : IReadWriter
     {
-        public List<Transaction> read(string filename)
+        public List<Transaction> Read(string filename)
         {
             var transactions = new List<Transaction>();
             
@@ -24,7 +24,7 @@ namespace SupportBank
                     }
                     try {
                         var date = DateTime.Parse(strings[0]);
-                        transactions.Add(new Transaction(DateTime.Parse(strings[0]), strings[1], 
+                        transactions.Add(new Transaction(date, strings[1], 
                             strings[2], strings[3], decimal.Parse(strings[4])));
                     } catch {
                         Console.WriteLine($"Malformed transaction - line {lineNum}: {line}");
@@ -35,7 +35,7 @@ namespace SupportBank
             return transactions;
         }
 
-        public void write(string filename, List<Transaction> transactions)
+        public void Write(string filename, HashSet<Transaction> transactions)
         {
             var streamWriter = new StreamWriter(filename);
 

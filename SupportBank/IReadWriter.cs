@@ -4,7 +4,7 @@ namespace SupportBank
 {
     public interface IReadWriter
     {
-        List<Transaction> read(string filename);
-        void write(string filename, List<Transaction> transactions);
+        List<Transaction> Read(string filename);
+        void Write(string filename, HashSet<Transaction> transactions);
     }
 }

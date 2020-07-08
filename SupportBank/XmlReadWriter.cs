@@ -9,7 +9,7 @@ namespace SupportBank
     {
         private static DateTime baseDate = new DateTime(1900, 1, 1);
         
-        public List<Transaction> read(string filename)
+        public List<Transaction> Read(string filename)
         {
             var transactions = new List<Transaction>();
             var xmldoc = new XmlDocument();
@@ -29,7 +29,7 @@ namespace SupportBank
             return transactions;
         }
 
-        public void write(string filename, List<Transaction> transactions)
+        public void Write(string filename, HashSet<Transaction> transactions)
         {
             XmlWriterSettings settings = new XmlWriterSettings { Indent = true };
             using (XmlWriter xmlWriter = XmlWriter.Create(filename, settings))

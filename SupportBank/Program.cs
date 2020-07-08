@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Text;
+using System.Globalization;
+using System.Linq;
 using System.Text.RegularExpressions;
-using System.Xml;
-using Newtonsoft.Json;
 using NLog;
 using NLog.Config;
 using NLog.Targets;
@@ -12,22 +10,21 @@ using NLog.Targets;
 namespace SupportBank {
     internal class Program {
         private static readonly ILogger logger = LogManager.GetCurrentClassLogger();
-        private static List<Transaction> transactions = new List<Transaction>();
+        private static HashSet<Transaction> transactions = new HashSet<Transaction>();
         private static IReadWriter csvReadWriter = new CsvReadWriter();
         private static IReadWriter jsonReadWriter = new JsonReadWriter();
         private static IReadWriter xmlReadWriter = new XmlReadWriter();
 
         public static void Main()
         {
-            LoggingSetup();
-
+            SetupLogging();
             while (true)
             {
-                runCommand();
+                RunCommand();
             }
         }
 
-        private static void LoggingSetup()
+        private static void SetupLogging()
         {
             var config = new LoggingConfiguration();
             var target = new FileTarget
@@ -40,10 +37,11 @@ namespace SupportBank {
             LogManager.Configuration = config;
         }
 
-        public static void runCommand()
+        public static void RunCommand()
         {
             var r = new Regex("List ([a-z]+( [a-z])?)", RegexOptions.IgnoreCase);
-            Console.WriteLine(@"""List All"" or ""List (Account)"" or ""Import File (FileName)"" or ""Export File (FileName)""");
+            Console.WriteLine("\"List All\" or \"List (Account)\" or \"Import File (FileName)\" " +
+                              "or \"Export File (FileName)\"");
             var input = Console.ReadLine();
             var m = r.Match(input);
                 
@@ -52,13 +50,13 @@ namespace SupportBank {
                 input = input.Substring(12);
                 try {
                     if (input.EndsWith(".json")) {
-                        transactions = jsonReadWriter.read(input);
+                        transactions.UnionWith(jsonReadWriter.Read(input));
                     }
                     else if (input.EndsWith(".csv")) {
-                        transactions = csvReadWriter.read(input);
+                        transactions.UnionWith(csvReadWriter.Read(input));
                     }
                     else {
-                        transactions = xmlReadWriter.read(input);
+                        transactions.UnionWith(xmlReadWriter.Read(input));
                     }
                 }
                 catch {
@@ -70,13 +68,13 @@ namespace SupportBank {
                 input = input.Substring(12);
                 try {
                     if (input.EndsWith(".json")) {
-                        jsonReadWriter.write(input, transactions);
+                        jsonReadWriter.Write(input, transactions);
                     }
                     else if (input.EndsWith(".csv")) {
-                        csvReadWriter.write(input, transactions);
+                        csvReadWriter.Write(input, transactions);
                     }
                     else {
-                        xmlReadWriter.write(input, transactions);
+                        xmlReadWriter.Write(input, transactions);
                     }
                 }
                 catch {
@@ -98,7 +96,7 @@ namespace SupportBank {
         }
         
         public static void ListAll() {
-            var accounts = new Dictionary<string, decimal>(); // make an object, use decimal as appose to float?
+            var accounts = new Dictionary<string, decimal>(); 
             foreach (var t in transactions) {
                 if (!accounts.ContainsKey(t.From)) {
                     accounts.Add(t.From, decimal.Zero);
@@ -110,12 +108,12 @@ namespace SupportBank {
                 accounts[t.To] += t.Amount;
             }
             foreach (var entry in accounts) {
-                Console.WriteLine($"{entry.Key}: {entry.Value}"); // string interpolation
+                Console.WriteLine($"{entry.Key}: {entry.Value.ToString("C", CultureInfo.CurrentCulture)}"); 
             }
         }
 
         public static void ListAccount(string name) {
-            transactions.FindAll(t => t.From == name || t.To == name)  
+            transactions.ToList().FindAll(t => t.From == name || t.To == name)  
                .ForEach(t => Console.WriteLine(t));
         }
     }

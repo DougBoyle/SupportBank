@@ -6,17 +6,17 @@ namespace SupportBank
 {
     public class JsonReadWriter : IReadWriter
     {
-        public List<Transaction> read(string filename)
+        public List<Transaction> Read(string filename)
         {
             return JsonConvert.DeserializeObject<List<Transaction>>(
                 File.ReadAllText(filename));
         }
 
-        public void write(string filename, List<Transaction> transactions)
+        public void Write(string filename, HashSet<Transaction> transactions)
         {
             var writer = new JsonTextWriter(new StreamWriter(filename));
             var ser = new JsonSerializer();
-            writer.Formatting = Newtonsoft.Json.Formatting.Indented;
+            writer.Formatting = Formatting.Indented;
             ser.Serialize(writer, transactions);            
             writer.Close();
         }
