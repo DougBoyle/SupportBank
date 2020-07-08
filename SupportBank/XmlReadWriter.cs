@@ -17,13 +17,18 @@ namespace SupportBank
             XmlNodeList nodes = xmldoc.DocumentElement.SelectNodes("/TransactionList/SupportTransaction");
             foreach (XmlNode node in nodes)
             {
-                var Narrative = node.SelectSingleNode("Description").InnerText;
-                var Amount = decimal.Parse(node.SelectSingleNode("Value").InnerText);
-                var From = node.SelectSingleNode("Parties/From").InnerText;
-                var To = node.SelectSingleNode("Parties/To").InnerText;
-                var Date =  baseDate.AddDays(Int32.Parse(node.Attributes[0].Value));
-                var t = new Transaction(Date, From, To, Narrative, Amount);
-                transactions.Add(t);
+                try {
+                    var Narrative = node.SelectSingleNode("Description").InnerText;
+                    var Amount = decimal.Parse(node.SelectSingleNode("Value").InnerText);
+                    var From = node.SelectSingleNode("Parties/From").InnerText;
+                    var To = node.SelectSingleNode("Parties/To").InnerText;
+                    var Date = baseDate.AddDays(Int32.Parse(node.Attributes[0].Value));
+                    var t = new Transaction(Date, From, To, Narrative, Amount);
+                    transactions.Add(t);
+                }
+                catch {
+                    Console.WriteLine($"Malformed xml item: {node.InnerXml}");
+                }
             }
 
             return transactions;
