@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
+using NDesk.Options;
 using NLog;
 using NLog.Config;
 using NLog.Targets;
@@ -39,80 +40,77 @@ namespace SupportBank {
 
         public static void RunCommand()
         {
-            var r = new Regex("List ([a-z]+( [a-z])?)(?<date> .*)?", RegexOptions.IgnoreCase);
+            var r = new Regex("(?<command>list |import file |export file )(?<args>.*)", RegexOptions.IgnoreCase);
+            var rSearch = new Regex("(?<name>[a-z]+( [a-z])?)(?<date> .*)?", RegexOptions.IgnoreCase);
+
             Console.WriteLine("\"List All\" or \"List (Account)\" or \"Import File (FileName)\" " +
                               "or \"Export File (FileName)\"");
             var input = Console.ReadLine();
             var m = r.Match(input);
-                
-            if (input.ToLower().StartsWith("import file "))
-            {
-                input = input.Substring(12);
-                try {
-                    if (input.EndsWith(".json")) {
-                        transactions.UnionWith(jsonReadWriter.Read(input));
-                    }
-                    else if (input.EndsWith(".csv")) {
-                        transactions.UnionWith(csvReadWriter.Read(input));
-                    }
-                    else {
-                        transactions.UnionWith(xmlReadWriter.Read(input));
-                    }
-                }
-                catch {
-                    Console.WriteLine($"Could not read file: {input}");
-                }
+
+            if (!m.Success) {
+                Console.WriteLine("Command not recognised");
+                return;
             }
-            else if (input.ToLower().StartsWith("export file "))
-            {
-                input = input.Substring(12);
-                try {
-                    if (input.EndsWith(".json")) {
-                        jsonReadWriter.Write(input, transactions);
+            
+            switch (m.Groups["command"].ToString().ToLower()) {
+                case "list ": {
+                    var m2 = rSearch.Match(m.Groups["args"].ToString());
+                    if (!m2.Success) {
+                        Console.WriteLine("Name/date not recognised");
+                        return;
                     }
-                    else if (input.EndsWith(".csv")) {
-                        csvReadWriter.Write(input, transactions);
+                    var date = DateTime.Now;
+                    if (!m2.Groups["date"].ToString().Equals("")) {
+                        try {
+                            date = DateTime.Parse(m2.Groups["date"].ToString());
+                        }
+                        catch {
+                            Console.WriteLine("Date not recognised");
+                        }
                     }
-                    else {
-                        xmlReadWriter.Write(input, transactions);
+                    var name = m2.Groups["name"].ToString();
+                    if (name.ToLower().Equals("all")) {
+                        ListAll(date);
+                    } else {
+                        ListAccount(name, date);
                     }
+                    break;
                 }
-                catch {
-                    Console.WriteLine($"Could not write file: {input}");
-                }
-            }
-            else if (input.ToLower().StartsWith("list all"))
-            {
-                try {
-                    var d = DateTime.Parse(input.Substring(8));
-                    ListAll(d);
-                } catch {
-                    if (input.Length > 8) {
-                        Console.WriteLine("Date input not recognised");
-                    }
-                    ListAll(DateTime.Now);
-                }
-            }
-            else if (m.Success)
-            {
-                var name = m.Groups[1].ToString();
-                var date = m.Groups["date"].ToString();
-                if (date.Length == 0) {
-                    ListAccount(name, DateTime.Now);
-                }
-                else {
+                case "import file ": {
+                    var filename = m.Groups["args"].ToString();
                     try {
-                        ListAccount(name, DateTime.Parse(date));
+                        if (filename.EndsWith(".json")) {
+                            transactions.UnionWith(jsonReadWriter.Read(filename));
+                        }
+                        else if (filename.EndsWith(".xml")) {
+                            transactions.UnionWith(xmlReadWriter.Read(filename));
+                        }
+                        else {
+                            transactions.UnionWith(csvReadWriter.Read(filename));
+                        }
+                    } catch {
+                        Console.WriteLine($"Could not read file: {filename}");
                     }
-                    catch {
-                        Console.WriteLine("Date input not recognised");
-                        ListAccount(name, DateTime.Now);
-                    }
+                    break;
                 }
-            }
-            else
-            { 
-                Console.WriteLine("Incorrect Format");
+                case "export file ": {
+                    var filename = m.Groups["args"].ToString();
+                    try {
+                        if (filename.EndsWith(".json")) {
+                            jsonReadWriter.Write(filename, transactions);
+                        }
+                        else if (filename.EndsWith(".xml")) {
+                            xmlReadWriter.Write(filename, transactions);
+                        }
+                        else {
+                            csvReadWriter.Write(filename, transactions);
+                        }
+                    } catch {
+                        Console.WriteLine($"Could not write file: {filename}");
+                    }
+                    break;
+                }
             }
         }
 
